@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>DOM Operations Benchmark</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        h1 {
+            font-size: 2.5em;
+            color: #2d3748;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        h1:before {
+            content: "⚡";
+            font-size: 1.2em;
+        }
+
+        .subtitle {
+            color: #718096;
+            font-size: 1.1em;
+            margin-bottom: 20px;
+        }
+
+        /* Control Panel */
+        .control-panel {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 7px 14px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #4a5568;
+            border: 1px solid #e2e8f0;
+        }
+
+        .btn-secondary:hover {
+            background: #f7fafc;
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: #48bb78;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #38a169;
+            transform: translateY(-2px);
+        }
+
+        .btn-warning {
+            background: #ed8936;
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background: #dd6b20;
+            transform: translateY(-2px);
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .stat-label {
+            color: #718096;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #2d3748;
+        }
+
+        .stat-unit {
+            font-size: 0.5em;
+            color: #a0aec0;
+            margin-left: 5px;
+        }
+
+        .stat-trend {
+            margin-top: 10px;
+            font-size: 0.9em;
+            color: #48bb78;
+        }
+
+        /* Test Area */
+        .test-area-section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .test-area-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .test-area-header h3 {
+            color: #2d3748;
+            font-size: 1.2em;
+        }
+
+        .test-area-badge {
+            background: #edf2f7;
+            color: #4a5568;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.9em;
+        }
+
+        .test-area {
+            min-height: 150px;
+            max-height: 300px;
+            overflow: auto;
+            background: #f7fafc;
+            border-radius: 12px;
+            padding: 15px;
+            border: 2px dashed #cbd5e0;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 12px;
+        }
+
+        /* Benchmark Cards */
+        .benchmark-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .benchmark-card {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            border: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .benchmark-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            border-color: #667eea;
+        }
+
+        .benchmark-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 10px;
+        }
+
+        .benchmark-name {
+            font-weight: 600;
+            color: #2d3748;
+            font-size: 1em;
+            line-height: 1.4;
+        }
+
+        .benchmark-category {
+            font-size: 0.7em;
+            padding: 3px 8px;
+            border-radius: 12px;
+            background: #e2e8f0;
+            color: #4a5568;
+            white-space: nowrap;
+        }
+
+        .benchmark-description {
+            font-size: 0.85em;
+            color: #718096;
+            margin: 8px 0;
+            min-height: 40px;
+        }
+
+        .benchmark-stats {
+            background: #f7fafc;
+            border-radius: 8px;
+            padding: 10px;
+            margin: 10px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .benchmark-stat {
+            text-align: center;
+        }
+
+        .benchmark-stat-label {
+            font-size: 0.7em;
+            color: #a0aec0;
+            text-transform: uppercase;
+        }
+
+        .benchmark-stat-value {
+            font-weight: 600;
+            color: #2d3748;
+            font-size: 1.1em;
+        }
+
+        .benchmark-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .benchmark-btn {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.9em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .benchmark-btn-run {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .benchmark-btn-run:hover {
+            opacity: 0.9;
+        }
+
+        .benchmark-btn-reset {
+            background: #e2e8f0;
+            color: #4a5568;
+        }
+
+        .benchmark-btn-reset:hover {
+            background: #cbd5e0;
+        }
+
+        /* Results Table */
+        .results-section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 20px;
+            margin-top: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .results-header h2 {
+            color: #2d3748;
+            font-size: 1.5em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .results-header h2:before {
+            content: "📊";
+        }
+
+        .table-controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            font-size: 0.95em;
+        }
+
+        th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 600;
+            padding: 15px;
+            text-align: left;
+            cursor: pointer;
+            transition: opacity 0.3s;
+            white-space: nowrap;
+        }
+
+        th:hover {
+            opacity: 0.9;
+        }
+
+        th:after {
+            content: "↕️";
+            margin-left: 8px;
+            font-size: 0.8em;
+            opacity: 0.7;
+        }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #e2e8f0;
+            color: #4a5568;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background: #f7fafc;
+        }
+
+        /* Performance indicators */
+        .rank-1 {
+            background: linear-gradient(135deg, #f6f9fc 0%, #e6f7ff 100%);
+        }
+
+        .rank-1 td:first-child {
+            border-left: 4px solid #ffd700;
+        }
+
+        .performance-bar {
+            width: 100%;
+            height: 8px;
+            background: #edf2f7;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+
+        .performance-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #48bb78, #38a169);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+
+        .badge-fast {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+
+        .badge-slow {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+
+        .badge-average {
+            background: #feebc8;
+            color: #744210;
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            margin: 20px 0;
+            display: none;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #edf2f7;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        .progress-text {
+            text-align: center;
+            margin-top: 10px;
+            color: #4a5568;
+            font-weight: 600;
+        }
+
+        /* Medal Icons */
+        .medal {
+            display: inline-block;
+            margin-right: 5px;
+            font-size: 1.2em;
+        }
+
+        .medal-gold { color: #ffd700; }
+        .medal-silver { color: #c0c0c0; }
+        .medal-bronze { color: #cd7f32; }
+
+        @media (max-width: 768px) {
+            .header { padding: 20px; }
+            h1 { font-size: 1.8em; }
+            .stat-card { padding: 15px; }
+            .stat-value { font-size: 1.5em; }
+            .benchmark-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>DOM Operations Benchmark</h1>
+            <div class="subtitle">
+                Сравнение производительности различных операций с DOM деревом
+            </div>
+            
+            <div class="control-panel">
+                <button class="btn btn-primary" onclick="runAllBenchmarks()">
+                    <span>▶</span> Запустить все тесты
+                </button>
+                <button class="btn btn-secondary" onclick="resetTestArea()">
+                    <span>🔄</span> Сбросить тестовую область
+                </button>
+                <button class="btn btn-warning" onclick="resetAllResults()">
+                    <span>🗑</span> Сбросить все результаты
+                </button>
+            </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="stats-grid" id="statsContainer" style="display: none;">
+            <div class="stat-card">
+                <div class="stat-label">Среднее время</div>
+                <div class="stat-value" id="avgTime">0<span class="stat-unit">мс</span></div>
+                <div class="stat-trend" id="avgTrend"></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Быстрейший тест</div>
+                <div class="stat-value" id="fastestTest">-</div>
+                <div class="stat-trend" id="fastestTime"></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Медленный тест</div>
+                <div class="stat-value" id="slowestTest">-</div>
+                <div class="stat-trend" id="slowestTime"></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Всего операций</div>
+                <div class="stat-value" id="totalOps">0<span class="stat-unit">шт</span></div>
+                <div class="stat-trend" id="totalOpsTrend"></div>
+            </div>
+        </div>
+
+        <!-- Test Area -->
+        <div class="test-area-section">
+            <div class="test-area-header">
+                <h3>🧪 Тестовая область DOM</h3>
+                <span class="test-area-badge" id="elementCount">Элементов: 0</span>
+            </div>
+            <div class="test-area" id="testArea"></div>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="progress-container" id="progressContainer">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill">0%</div>
+            </div>
+            <div class="progress-text" id="progressText">Подготовка...</div>
+        </div>
+
+        <!-- Benchmark Cards -->
+        <div class="benchmark-grid" id="benchmarkGrid"></div>
+
+        <!-- Results Table -->
+        <div class="results-section">
+            <div class="results-header">
+                <h2>Результаты тестирования</h2>
+                <div class="table-controls">
+                    <button class="btn btn-secondary btn-small" onclick="sortTable(2)" title="Сортировать по времени">
+                        ⏱ Сортировать по времени
+                    </button>
+                    <button class="btn btn-secondary btn-small" onclick="sortTable(3)" title="Сортировать по скорости">
+                        ⚡ Сортировать по скорости
+                    </button>
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+                <table id="resultsTable">
+                    <thead>
+                        <tr>
+                            <th onclick="sortTable(0)">№</th>
+                            <th onclick="sortTable(1)">Операция</th>
+                            <th onclick="sortTable(2)">Время (мс)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsBody">
+                        <tr>
+                            <td colspan="4" style="text-align: center; padding: 40px;">
+                                <div style="font-size: 1.2em; color: #a0aec0; margin-bottom: 10px;">
+                                    📊 Нет данных
+                                </div>
+                                <div style="color: #cbd5e0;">
+                                    Нажмите "Запустить все тесты" или запустите отдельные тесты из карточек
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const ITERATIONS = 500000;
+        let results = [];
+        let isRunning = false;
+
+        // Определение всех тестов
+        const benchmarks = [
+            { 
+                id: 'innerHTML',
+                name: 'innerHTML', 
+                description: 'Простая вставка HTML строки. Полностью перезаписывает содержимое элемента.',
+                category: 'Создание',
+                fn: testInnerHTML 
+            },
+            { 
+                id: 'createElement',
+                name: 'createElement + appendChild', 
+                description: 'Создание элемента через DOM API и добавление в дерево.',
+                category: 'Создание',
+                fn: testCreateElementAppend 
+            },
+            { 
+                id: 'insertAdjacentHTML',
+                name: 'insertAdjacentHTML', 
+                description: 'Вставка HTML в указанную позицию без перезаписи существующего контента. (beforebegin, вставка до элемента)',
+                category: 'Создание',
+                fn: testInsertAdjacentHTML 
+            },
+            { 
+                id: 'textContent',
+                name: 'textContent', 
+                description: 'Изменение текстового содержимого элемента.',
+                category: 'Модификация',
+                fn: testTextContent 
+            },
+            { 
+                id: 'classList',
+                name: 'ClassList', 
+                description: 'Манипуляции с классами элемента (добавление/удаление).',
+                category: 'Модификация',
+                fn: testClassList 
+            },
+            { 
+                id: 'dataset',
+                name: 'Dataset', 
+                description: 'Работа с data-атрибутами через свойство dataset.',
+                category: 'Модификация',
+                fn: testDataset 
+            },
+            { 
+                id: 'style',
+                name: 'Style Property', 
+                description: 'Изменение инлайн-стилей элемента.',
+                category: 'Стилизация',
+                fn: testStyleProperty 
+            },
+            { 
+                id: 'fragment',
+                name: 'DocumentFragment', 
+                description: 'Пакетное создание элементов через фрагмент документа. (batch)',
+                category: 'Оптимизация',
+                fn: testDocumentFragment 
+            },
+            { 
+                id: 'cloneNode',
+                name: 'cloneNode', 
+                description: 'Клонирование существующих узлов.',
+                category: 'Копирование',
+                fn: testCloneNode 
+            },
+            { 
+                id: 'insertBefore',
+                name: 'insertBefore', 
+                description: 'Вставка элемента перед указанным узлом.',
+                category: 'Вставка',
+                fn: testInsertBefore 
+            },
+            { 
+                id: 'attributes',
+                name: 'Attributes', 
+                description: 'Работа с атрибутами (set/get/hasAttribute).',
+                category: 'Атрибуты',
+                fn: testAttributes 
+            }
+        ];
+
+        // Инициализация карточек
+        function initBenchmarkCards() {
+            const grid = document.getElementById('benchmarkGrid');
+            grid.innerHTML = benchmarks.map(benchmark => `
+                <div class="benchmark-card" id="card-${benchmark.id}">
+                    <div class="benchmark-header">
+                        <span class="benchmark-name">${benchmark.name}</span>
+                        <span class="benchmark-category">${benchmark.category}</span>
+                    </div>
+                    <div class="benchmark-description">${benchmark.description}</div>
+                    <div class="benchmark-stats" id="stats-${benchmark.id}" style="display: none;">
+                        <div class="benchmark-stat">
+                            <div class="benchmark-stat-label">Время</div>
+                            <div class="benchmark-stat-value" id="time-${benchmark.id}">0</div>
+                        </div>
+                        <div class="benchmark-stat">
+                            <div class="benchmark-stat-label">Ops/sec</div>
+                            <div class="benchmark-stat-value" id="ops-${benchmark.id}">0</div>
+                        </div>
+                        <div class="benchmark-stat">
+                            <div class="benchmark-stat-label">Статус</div>
+                            <div class="benchmark-stat-value" id="badge-${benchmark.id}">⚪</div>
+                        </div>
+                    </div>
+                    <div class="benchmark-actions">
+                        <button class="benchmark-btn benchmark-btn-run" onclick="runSingleBenchmark('${benchmark.id}')">
+                            ▶ Запустить
+                        </button>
+                        <button class="benchmark-btn benchmark-btn-reset" onclick="resetSingleBenchmark('${benchmark.id}')">
+                            🔄 Сброс
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function resetTestArea() {
+            const area = document.getElementById('testArea');
+            area.innerHTML = `
+                <div style="padding: 10px; background: #ebf8ff; border-radius: 8px; margin: 5px;">
+                    📦 Корневой элемент (готов к тестам)
+                </div>
+                <div id="benchmarkRoot" style="padding: 10px;"></div>
+            `;
+            updateElementCount();
+        }
+
+        function updateElementCount() {
+            const area = document.getElementById('testArea');
+            const count = area.getElementsByTagName('*').length;
+            document.getElementById('elementCount').textContent = `Элементов: ${count}`;
+        }
+
+        async function runSingleBenchmark(benchmarkId) {
+            if (isRunning) {
+                alert('Другой тест уже выполняется!');
+                return;
+            }
+
+            const benchmark = benchmarks.find(b => b.id === benchmarkId);
+            if (!benchmark) return;
+
+            isRunning = true;
+            resetTestArea();
+            
+            // Удаляем предыдущий результат этого теста если был
+            results = results.filter(r => r.id !== benchmarkId);
+            
+            document.getElementById('progressContainer').style.display = 'block';
+            document.getElementById('progressFill').style.width = '50%';
+            document.getElementById('progressFill').textContent = '50%';
+            document.getElementById('progressText').textContent = `Запущен тест: ${benchmark.name}`;
+
+            await runTest(benchmark.name, benchmark.fn, benchmark.category, benchmarkId);
+            
+            document.getElementById('progressFill').style.width = '100%';
+            document.getElementById('progressFill').textContent = '100%';
+            document.getElementById('progressText').textContent = 'Тест завершен!';
+            
+            setTimeout(() => {
+                document.getElementById('progressContainer').style.display = 'none';
+            }, 1000);
+
+            displayResults();
+            updateStats();
+            updateBenchmarkCard(benchmarkId);
+            
+            isRunning = false;
+        }
+
+        async function runAllBenchmarks() {
+            if (isRunning) {
+                alert('Тесты уже выполняются!');
+                return;
+            }
+
+            isRunning = true;
+            resetTestArea();
+            results = [];
+            
+            document.getElementById('progressContainer').style.display = 'block';
+            document.getElementById('statsContainer').style.display = 'none';
+            
+            // Скрываем статистику всех карточек
+            benchmarks.forEach(b => {
+                document.getElementById(`stats-${b.id}`).style.display = 'none';
+            });
+
+            for (let i = 0; i < benchmarks.length; i++) {
+                const benchmark = benchmarks[i];
+                const progress = Math.round((i / benchmarks.length) * 100);
+                
+                document.getElementById('progressFill').style.width = progress + '%';
+                document.getElementById('progressFill').textContent = progress + '%';
+                document.getElementById('progressText').textContent = 
+                    `Тест ${i + 1}/${benchmarks.length}: ${benchmark.name}`;
+                
+                await runTest(benchmark.name, benchmark.fn, benchmark.category, benchmark.id);
+                updateBenchmarkCard(benchmark.id);
+                updateElementCount();
+            }
+
+            document.getElementById('progressFill').style.width = '100%';
+            document.getElementById('progressFill').textContent = '100%';
+            document.getElementById('progressText').textContent = 'Все тесты завершены!';
+            
+            setTimeout(() => {
+                document.getElementById('progressContainer').style.display = 'none';
+            }, 1000);
+
+            displayResults();
+            updateStats();
+            isRunning = false;
+        }
+
+        async function runTest(name, testFn, category, id) {
+            const area = document.getElementById('testArea');
+            const root = document.getElementById('benchmarkRoot') || createRoot(area);
+            
+            root.innerHTML = '';
+            
+            // Прогрев
+            for (let i = 0; i < 100; i++) {
+                testFn(root, 10);
+                root.innerHTML = '';
+            }
+            
+            root.innerHTML = '';
+            const start = performance.now();
+            testFn(root, ITERATIONS);
+            const end = performance.now();
+            
+            const time = end - start;
+            const opsPerSec = Math.round((ITERATIONS / time) * 1000);
+            
+            results.push({
+                id,
+                name,
+                category,
+                time: parseFloat(time.toFixed(2)),
+                opsPerSec,
+                rawTime: time
+            });
+        }
+
+        function updateBenchmarkCard(benchmarkId) {
+            const result = results.find(r => r.id === benchmarkId);
+            if (!result) return;
+
+            const statsDiv = document.getElementById(`stats-${benchmarkId}`);
+            const timeSpan = document.getElementById(`time-${benchmarkId}`);
+            const opsSpan = document.getElementById(`ops-${benchmarkId}`);
+            const badgeSpan = document.getElementById(`badge-${benchmarkId}`);
+
+            if (statsDiv && timeSpan && opsSpan && badgeSpan) {
+                statsDiv.style.display = 'flex';
+                timeSpan.textContent = `${result.time}ms`;
+                opsSpan.textContent = result.opsPerSec.toLocaleString();
+                
+                // Определяем статус
+                const times = results.map(r => r.time);
+                const avgTime = times.reduce((a, b) => a + b, 0) / times.length;
+                
+                if (result.time <= avgTime * 0.8) {
+                    badgeSpan.innerHTML = '🚀 Быстро';
+                    badgeSpan.style.color = '#22543d';
+                } else if (result.time >= avgTime * 1.5) {
+                    badgeSpan.innerHTML = '🐢 Медленно';
+                    badgeSpan.style.color = '#742a2a';
+                } else {
+                    badgeSpan.innerHTML = '⚡ Средне';
+                    badgeSpan.style.color = '#744210';
+                }
+            }
+        }
+
+        function resetSingleBenchmark(benchmarkId) {
+            // Удаляем результат конкретного теста
+            results = results.filter(r => r.id !== benchmarkId);
+            
+            // Скрываем статистику в карточке
+            const statsDiv = document.getElementById(`stats-${benchmarkId}`);
+            if (statsDiv) {
+                statsDiv.style.display = 'none';
+            }
+            
+            // Обновляем отображение
+            displayResults();
+            updateStats();
+            
+            // Если результатов больше нет, скрываем статистику
+            if (results.length === 0) {
+                document.getElementById('statsContainer').style.display = 'none';
+            }
+        }
+
+        function resetAllResults() {
+            results = [];
+            
+            // Скрываем статистику всех карточек
+            benchmarks.forEach(b => {
+                const statsDiv = document.getElementById(`stats-${b.id}`);
+                if (statsDiv) {
+                    statsDiv.style.display = 'none';
+                }
+            });
+            
+            // Скрываем общую статистику
+            document.getElementById('statsContainer').style.display = 'none';
+            
+            // Очищаем таблицу
+            document.getElementById('resultsBody').innerHTML = `
+                <tr>
+                    <td colspan="4" style="text-align: center; padding: 40px;">
+                        <div style="font-size: 1.2em; color: #a0aec0; margin-bottom: 10px;">
+                            📊 Нет данных
+                        </div>
+                        <div style="color: #cbd5e0;">
+                            Запустите тесты для получения результатов
+                        </div>
+                    </td>
+                </tr>
+            `;
+            
+            resetTestArea();
+        }
+
+        function createRoot(area) {
+            const root = document.createElement('div');
+            root.id = 'benchmarkRoot';
+            area.appendChild(root);
+            return root;
+        }
+
+        // Тестовые функции
+        function testInnerHTML(root, iterations) {
+            for (let i = 0; i < iterations; i++) {
+                root.innerHTML = `<div class="item">Item ${i}</div>`;
+            }
+        }
+
+        function testCreateElementAppend(root, iterations) {
+            for (let i = 0; i < iterations; i++) {
+                const div = document.createElement('div');
+                div.className = 'item';
+                div.textContent = `Item ${i}`;
+                root.appendChild(div);
+            }
+        }
+
+        function testInsertAdjacentHTML(root, iterations) {
+            for (let i = 0; i < iterations; i++) {
+                root.insertAdjacentHTML('beforeend', `<div class="item">Item ${i}</div>`);
+            }
+        }
+
+        function testTextContent(root, iterations) {
+            const div = document.createElement('div');
+            root.appendChild(div);
+            for (let i = 0; i < iterations; i++) {
+                div.textContent = `Text ${i}`;
+            }
+        }
+
+        function testClassList(root, iterations) {
+            const div = document.createElement('div');
+            div.textContent = "В меня добавляли и удаляли классы";
+            root.appendChild(div);
+            for (let i = 0; i < iterations; i++) {
+                div.classList.add(`class-${i}`);
+                div.classList.remove(`class-${(i - 1)}`);
+            }
+        }
+
+        function testDataset(root, iterations) {
+            const div = document.createElement('div');
+            div.textContent = "Во мне меняют dataset аттрибут";
+            root.appendChild(div);
+            for (let i = 0; i < iterations; i++) {
+                div.dataset.index = i;
+            }
+        }
+
+        function testStyleProperty(root, iterations) {
+            const div = document.createElement('div');
+            div.textContent = "Во мне меняют style.color";
+            root.appendChild(div);
+            for (let i = 0; i < iterations; i++) {
+                div.style.color = i % 2 ? 'red' : 'blue';
+            }
+        }
+
+        function testDocumentFragment(root, iterations) {
+            const fragment = document.createDocumentFragment();
+            for (let i = 0; i < iterations; i++) {
+                const div = document.createElement('div');
+                div.textContent = `Item ${i}`;
+                fragment.appendChild(div);
+            }
+            root.appendChild(fragment);
+        }
+
+        function testCloneNode(root, iterations) {
+            const template = document.createElement('div');
+            template.className = 'template';
+            template.textContent = 'Template';
+            root.appendChild(template);
+            
+            for (let i = 0; i < iterations; i++) {
+                const clone = template.cloneNode(true);
+                clone.textContent = `Clone ${i}`;
+                root.appendChild(clone);
+            }
+        }
+
+        function testInsertBefore(root, iterations) {
+            const referenceNode = document.createElement('div');
+            referenceNode.id = 'reference';
+            root.appendChild(referenceNode);
+            
+            for (let i = 0; i < iterations; i++) {
+                const div = document.createElement('div');
+                div.textContent = `Before ${i}`;
+                root.insertBefore(div, referenceNode);
+            }
+        }
+
+        function testAttributes(root, iterations) {
+            const div = document.createElement('div');
+            root.appendChild(div);
+            
+            for (let i = 0; i < iterations; i++) {
+                div.setAttribute('data-test', `value-${i}`);
+                div.getAttribute('data-test');
+                div.hasAttribute('data-test');
+            }
+        }
+
+        function displayResults() {
+            const tbody = document.getElementById('resultsBody');
+            if (results.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="4" style="text-align: center; padding: 40px;">
+                            <div style="font-size: 1.2em; color: #a0aec0; margin-bottom: 10px;">
+                                📊 Нет данных
+                            </div>
+                            <div style="color: #cbd5e0;">
+                                Запустите тесты для получения результатов
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = '';
+            
+            const fastestTime = Math.min(...results.map(r => r.time));
+            
+            results.sort((a, b) => a.time - b.time);
+            
+            results.forEach((result, index) => {
+                const row = tbody.insertRow();
+                const isFastest = index === 0;
+                const timeValue = result.time;
+                
+                const medalIcon = index === 0 ? '<span class="medal medal-gold">🥇</span>' :
+                                index === 1 ? '<span class="medal medal-silver">🥈</span>' :
+                                index === 2 ? '<span class="medal medal-bronze">🥉</span>' : '';
+                
+                const performancePercent = Math.round((fastestTime / timeValue) * 100);
+                
+                row.className = isFastest ? 'rank-1' : '';
+                
+                row.innerHTML = `
+                    <td style="font-weight: bold;">${medalIcon}${index + 1}</td>
+                    <td>
+                        <div style="display: flex; flex-direction: column;">
+                            <span style="font-weight: 600;">${result.name}</span>
+                            <span style="font-size: 0.8em; color: #718096;">${result.category}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="font-weight: 600;">${result.time.toFixed(2)}</span>
+                        </div>
+                        <div class="performance-bar">
+                            <div class="performance-bar-fill" style="width: ${performancePercent}%;"></div>
+                        </div>
+                    </td>
+                `;
+            });
+        }
+
+        function updateStats() {
+            if (results.length === 0) return;
+            
+            const times = results.map(r => r.time);
+            const avgTime = (times.reduce((a, b) => a + b, 0) / times.length).toFixed(2);
+            
+            const fastest = results.reduce((min, r) => r.time < min.time ? r : min, results[0]);
+            const slowest = results.reduce((max, r) => r.time > max.time ? r : max, results[0]);
+            
+            const totalOps = results.reduce((sum, r) => sum + r.opsPerSec, 0);
+            
+            document.getElementById('avgTime').innerHTML = `${avgTime}<span class="stat-unit">мс</span>`;
+            document.getElementById('fastestTest').innerHTML = fastest.name;
+            document.getElementById('fastestTime').innerHTML = `${fastest.time.toFixed(2)} мс`;
+            document.getElementById('slowestTest').innerHTML = slowest.name;
+            document.getElementById('slowestTime').innerHTML = `${slowest.time.toFixed(2)} мс`;
+            document.getElementById('totalOps').innerHTML = `${Math.round(totalOps).toLocaleString()}<span class="stat-unit">ops</span>`;
+            
+            document.getElementById('statsContainer').style.display = 'grid';
+        }
+
+        function sortTable(column) {
+            const tbody = document.getElementById('resultsBody');
+            const rows = Array.from(tbody.rows);
+            
+            rows.sort((a, b) => {
+                let aVal = a.cells[column].textContent;
+                let bVal = b.cells[column].textContent;
+                
+                if (column === 0) {
+                    return parseInt(aVal.match(/\d+/)) - parseInt(bVal.match(/\d+/));
+                } else if (column === 2) {
+                    return parseFloat(aVal) - parseFloat(bVal);
+                } else if (column === 3) {
+                    return parseInt(aVal.replace(/,/g, '')) - parseInt(bVal.replace(/,/g, ''));
+                }
+                return aVal.localeCompare(bVal);
+            });
+            
+            tbody.innerHTML = '';
+            rows.forEach((row, index) => {
+                if (index === 0) row.className = 'rank-1';
+                else row.className = '';
+                tbody.appendChild(row);
+            });
+        }
+
+        // Инициализация
+        initBenchmarkCards();
+        resetTestArea();
+    </script>
+</body>
+</html>
